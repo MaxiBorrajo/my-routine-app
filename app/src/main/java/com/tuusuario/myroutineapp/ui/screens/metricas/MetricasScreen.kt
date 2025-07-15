@@ -4,6 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -15,104 +17,121 @@ import com.tuusuario.myroutineapp.data.entities.Nota
 
 @Composable
 fun MetricasScreen(
+    onConfiguracion: () -> Unit,
     viewModel: MetricasViewModel = hiltViewModel()
 ) {
-    val rutinas by viewModel.rutinas.collectAsState(initial = emptyList())
-    var selectedEjercicioId by remember { mutableStateOf<Long?>(null) }
-    var progreso by remember { mutableStateOf<List<Progreso>>(emptyList()) }
-    val notas by viewModel.notas.collectAsState(initial = emptyList())
-    val evolucionPorGrupo by viewModel.evolucionPorGrupo.collectAsState(initial = emptyMap())
-    val rutinasList by viewModel.rutinas.collectAsState(initial = emptyList())
+    val progreso by viewModel.progreso.collectAsState()
+    val rutinas by viewModel.rutinas.collectAsState()
+    val ejercicios by viewModel.ejercicios.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("Métricas", style = MaterialTheme.typography.h5)
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Tiempo total de entrenamiento: ${rutinas.size} rutinas completadas")
-        Spacer(modifier = Modifier.height(16.dp))
-        // Selección de ejercicio para ver progreso
-        if (rutinas.isNotEmpty()) {
-            val ejercicios = rutinas.flatMap { it.nombre.split(",") }.distinct()
-            DropdownMenuEjercicios(ejercicios, selectedEjercicioId) { id ->
-                selectedEjercicioId = id
-            }
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Métricas") },
+                actions = {
+                    IconButton(onClick = onConfiguracion) {
+                        Icon(Icons.Default.Settings, contentDescription = "Configuración")
+                    }
+                }
+            )
         }
-        selectedEjercicioId?.let { ejercicioId ->
-            val progresoFlow = viewModel.progresoPorEjercicio(ejercicioId)
-            LaunchedEffect(ejercicioId) {
-                progresoFlow.collect { progreso = it }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .padding(padding)
+                .padding(16.dp)
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Resumen general
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Resumen General",
+                        style = MaterialTheme.typography.h6
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("Total de rutinas: ${rutinas.size}")
+                    Text("Total de ejercicios: ${ejercicios.size}")
+                    Text("Registros de progreso: ${progreso.size}")
+                }
             }
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Progreso histórico del ejercicio", style = MaterialTheme.typography.h6)
-            LazyColumn {
-                items(progreso) { p ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp),
-                        elevation = 2.dp
-                    ) {
-                        Column(modifier = Modifier.padding(8.dp)) {
-                            Text("Fecha: ${p.fecha}")
-                            p.peso?.let { Text("Peso: $it kg") }
-                            p.repeticiones?.let { Text("Reps: $it") }
-                            p.tiempo?.let { Text("Tiempo: $it s") }
-                            p.distancia?.let { Text("Distancia: $it km") }
-                            p.notas?.let { Text("Notas: $it") }
-                        }
+
+            // Métricas por grupo muscular
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Ejercicios por Grupo Muscular",
+                        style = MaterialTheme.typography.h6
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    val gruposMusculares = ejercicios.groupBy { it.grupoMuscular }
+                    gruposMusculares.forEach { (grupo, ejerciciosGrupo) ->
+                        Text("$grupo: ${ejerciciosGrupo.size} ejercicios")
                     }
                 }
             }
-        }
-        // Evolución por grupo muscular
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Evolución por grupo muscular", style = MaterialTheme.typography.h6)
-        if (evolucionPorGrupo.isNotEmpty()) {
-            evolucionPorGrupo.forEach { (grupo, progresos) ->
-                Text("$grupo: ${progresos.size} registros")
-                val totalPeso = progresos.sumOf { it.peso?.toDouble() ?: 0.0 }
-                val totalReps = progresos.sumOf { it.repeticiones ?: 0 }
-                val totalTiempo = progresos.sumOf { it.tiempo ?: 0 }
-                Text("  Peso total: $totalPeso kg, Reps: $totalReps, Tiempo: $totalTiempo s")
-            }
-        } else {
-            Text("No hay datos de grupos musculares.")
-        }
-        // Estadísticas de intensidad y duración
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Estadísticas de rutinas", style = MaterialTheme.typography.h6)
-        if (rutinasList.isNotEmpty()) {
-            val intensidades = rutinasList.map { it.intensidad }
-            val duraciones = rutinasList.map { it.duracion ?: 0 }
-            val intensidadProm = intensidades.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key ?: "-"
-            val duracionProm = if (duraciones.isNotEmpty()) duraciones.average().toInt() else 0
-            Text("Intensidad más frecuente: $intensidadProm")
-            Text("Duración promedio: $duracionProm s")
-        } else {
-            Text("No hay rutinas registradas.")
-        }
-        // Diario personal (notas)
-        Spacer(modifier = Modifier.height(16.dp))
-        Text("Diario personal (notas)", style = MaterialTheme.typography.h6)
-        if (notas.isNotEmpty()) {
-            LazyColumn(modifier = Modifier.heightIn(max = 200.dp)) {
-                items(notas) { nota ->
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 2.dp),
-                        elevation = 1.dp
-                    ) {
-                        Column(modifier = Modifier.padding(8.dp)) {
-                            Text("Fecha: ${nota.fecha}")
-                            Text(nota.texto)
-                            nota.rutinaId?.let { Text("Rutina asociada: $it") }
-                            nota.ejercicioId?.let { Text("Ejercicio asociado: $it") }
+
+            // Progreso reciente
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Progreso Reciente",
+                        style = MaterialTheme.typography.h6
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    val progresoReciente = progreso.take(5)
+                    if (progresoReciente.isNotEmpty()) {
+                        progresoReciente.forEach { p ->
+                            val ejercicio = ejercicios.find { it.id == p.ejercicioId }
+                            Text(
+                                text = "${ejercicio?.nombre ?: "Ejercicio"} - ${p.repeticiones ?: p.tiempo ?: "-"}",
+                                style = MaterialTheme.typography.body2
+                            )
                         }
+                    } else {
+                        Text("No hay registros de progreso recientes")
                     }
                 }
             }
-        } else {
-            Text("No hay notas registradas.")
+
+            // Estadísticas de intensidad
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                elevation = 4.dp
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Estadísticas de Intensidad",
+                        style = MaterialTheme.typography.h6
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    val intensidades = ejercicios.groupBy { it.intensidad }
+                    intensidades.forEach { (intensidad, ejerciciosIntensidad) ->
+                        Text("$intensidad: ${ejerciciosIntensidad.size} ejercicios")
+                    }
+                }
+            }
         }
     }
 }

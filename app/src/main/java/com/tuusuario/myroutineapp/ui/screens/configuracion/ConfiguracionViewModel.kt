@@ -22,27 +22,50 @@ class ConfiguracionViewModel @Inject constructor(
     val preparacion = preferencesManager.preparacion.stateIn(viewModelScope, SharingStarted.Lazily, 10)
 
     fun setSonidos(value: Boolean) {
-        viewModelScope.launch { preferencesManager.setSonidos(value) }
+        viewModelScope.launch {
+            preferencesManager.setSonidos(value)
+        }
     }
+
     fun setDescanso(value: Int) {
-        viewModelScope.launch { preferencesManager.setDescanso(value) }
+        viewModelScope.launch {
+            preferencesManager.setDescanso(value)
+        }
     }
+
     fun setUnidadPeso(value: String) {
-        viewModelScope.launch { preferencesManager.setUnidadPeso(value) }
+        viewModelScope.launch {
+            preferencesManager.setUnidadPeso(value)
+        }
     }
+
     fun setUnidadDistancia(value: String) {
-        viewModelScope.launch { preferencesManager.setUnidadDistancia(value) }
+        viewModelScope.launch {
+            preferencesManager.setUnidadDistancia(value)
+        }
     }
+
     fun setSonidoInicio(value: String) {
-        viewModelScope.launch { preferencesManager.setSonidoInicio(value) }
+        viewModelScope.launch {
+            preferencesManager.setSonidoInicio(value)
+        }
     }
+
     fun setSonidoFinSerie(value: String) {
-        viewModelScope.launch { preferencesManager.setSonidoFinSerie(value) }
+        viewModelScope.launch {
+            preferencesManager.setSonidoFinSerie(value)
+        }
     }
+
     fun setSonidoDescanso(value: String) {
-        viewModelScope.launch { preferencesManager.setSonidoDescanso(value) }
+        viewModelScope.launch {
+            preferencesManager.setSonidoDescanso(value)
+        }
     }
+
     fun setPreparacion(value: Int) {
-        viewModelScope.launch { preferencesManager.setPreparacion(value) }
+        viewModelScope.launch {
+            preferencesManager.setPreparacion(value)
+        }
     }
 }

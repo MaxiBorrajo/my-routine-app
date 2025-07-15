@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.StickyNote2
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -24,6 +25,7 @@ fun InicioScreen(
     onEjercicios: () -> Unit,
     onMetricas: () -> Unit,
     onNotas: () -> Unit,
+    onConfiguracion: () -> Unit,
     onPlayRutina: (Long) -> Unit
 ) {
     val rutinasViewModel: RutinasViewModel = hiltViewModel()
@@ -36,7 +38,14 @@ fun InicioScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Mi Progreso") })
+            TopAppBar(
+                title = { Text("Mi Progreso") },
+                actions = {
+                    IconButton(onClick = onConfiguracion) {
+                        Icon(Icons.Default.Settings, contentDescription = "Configuración")
+                    }
+                }
+            )
         }
     ) { padding ->
         Column(
@@ -74,26 +83,38 @@ fun InicioScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(onClick = onRutinas, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Default.PlayArrow, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
+                Button(
+                    onClick = onRutinas,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.PlayArrow, contentDescription = "Rutinas")
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text("Rutinas")
                 }
-                Button(onClick = onEjercicios, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Default.FitnessCenter, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
+                Button(
+                    onClick = onEjercicios,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.FitnessCenter, contentDescription = "Ejercicios")
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text("Ejercicios")
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Button(onClick = onMetricas, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Default.BarChart, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
+                Button(
+                    onClick = onMetricas,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.BarChart, contentDescription = "Métricas")
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text("Métricas")
                 }
-                Button(onClick = onNotas, modifier = Modifier.weight(1f)) {
-                    Icon(Icons.Default.StickyNote2, contentDescription = null)
-                    Spacer(modifier = Modifier.width(4.dp))
+                Button(
+                    onClick = onNotas,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.StickyNote2, contentDescription = "Notas")
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text("Notas")
                 }
             }

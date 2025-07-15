@@ -8,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -23,116 +24,78 @@ import java.util.Locale
 
 @Composable
 fun NotasScreen(
-    viewModel: NotasViewModel = hiltViewModel(),
-    rutinasViewModel: RutinasViewModel = hiltViewModel(),
-    ejerciciosViewModel: EjerciciosViewModel = hiltViewModel(),
-    onRutinaClick: (Long) -> Unit = {},
-    onEjercicioClick: (Long) -> Unit = {}
+    onRutinaClick: (Long) -> Unit,
+    onEjercicioClick: (Long) -> Unit,
+    onConfiguracion: () -> Unit,
+    viewModel: NotasViewModel = hiltViewModel()
 ) {
     val notas by viewModel.notas.collectAsState()
-    val rutinas by rutinasViewModel.rutinas.collectAsState()
-    val ejercicios by ejerciciosViewModel.ejercicios.collectAsState()
-    var showDialog by remember { mutableStateOf(false) }
-    var nuevaNota by remember { mutableStateOf("") }
-    var selectedRutinaId by remember { mutableStateOf<Long?>(null) }
-    var selectedEjercicioId by remember { mutableStateOf<Long?>(null) }
-    var filtroRutinaId by remember { mutableStateOf<Long?>(null) }
-    var filtroEjercicioId by remember { mutableStateOf<Long?>(null) }
-    var notaAEliminar by remember { mutableStateOf<Nota?>(null) }
+    var showAddDialog by remember { mutableStateOf(false) }
+    var newNotaText by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Notas") })
+            TopAppBar(
+                title = { Text("Mis Notas") },
+                actions = {
+                    IconButton(onClick = onConfiguracion) {
+                        Icon(Icons.Default.Settings, contentDescription = "Configuración")
+                    }
+                }
+            )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showDialog = true }) {
+            FloatingActionButton(onClick = { showAddDialog = true }) {
                 Icon(Icons.Default.Add, contentDescription = "Nueva nota")
             }
         }
     ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize()) {
-            Row(modifier = Modifier.padding(8.dp)) {
-                DropdownSelectorRutina(rutinas, filtroRutinaId) { filtroRutinaId = it }
-                Spacer(modifier = Modifier.width(8.dp))
-                DropdownSelectorEjercicio(ejercicios, filtroEjercicioId) { filtroEjercicioId = it }
-            }
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
-                items(notas.filter {
-                    (filtroRutinaId == null || it.rutinaId == filtroRutinaId) &&
-                    (filtroEjercicioId == null || it.ejercicioId == filtroEjercicioId)
-                }) { nota ->
-                    NotaItem(
-                        nota = nota,
-                        rutinas = rutinas,
-                        ejercicios = ejercicios,
-                        onDelete = { notaAEliminar = nota },
-                        onRutinaClick = onRutinaClick,
-                        onEjercicioClick = onEjercicioClick
-                    )
-                }
+        LazyColumn(
+            contentPadding = padding,
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(notas) { nota ->
+                NotaItem(
+                    nota = nota,
+                    onDelete = { viewModel.eliminarNota(nota) },
+                    onRutinaClick = { nota.rutinaId?.let { onRutinaClick(it) } },
+                    onEjercicioClick = { nota.ejercicioId?.let { onEjercicioClick(it) } }
+                )
             }
         }
-    }
-    if (showDialog) {
-        AlertDialog(
-            onDismissRequest = { showDialog = false },
-            title = { Text("Nueva nota") },
-            text = {
-                Column {
+
+        if (showAddDialog) {
+            AlertDialog(
+                onDismissRequest = { showAddDialog = false },
+                title = { Text("Nueva Nota") },
+                text = {
                     OutlinedTextField(
-                        value = nuevaNota,
-                        onValueChange = { nuevaNota = it },
-                        label = { Text("Nota") },
+                        value = newNotaText,
+                        onValueChange = { newNotaText = it },
+                        label = { Text("Texto de la nota") },
                         modifier = Modifier.fillMaxWidth()
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    DropdownSelectorRutina(rutinas, selectedRutinaId) { selectedRutinaId = it }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    DropdownSelectorEjercicio(ejercicios, selectedEjercicioId) { selectedEjercicioId = it }
-                }
-            },
-            confirmButton = {
-                Button(onClick = {
-                    if (nuevaNota.isNotBlank()) {
-                        viewModel.guardarNota(
-                            Nota(
-                                fecha = System.currentTimeMillis(),
-                                texto = nuevaNota,
-                                rutinaId = selectedRutinaId,
-                                ejercicioId = selectedEjercicioId
-                            )
-                        )
-                        nuevaNota = ""
-                        selectedRutinaId = null
-                        selectedEjercicioId = null
-                        showDialog = false
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            if (newNotaText.isNotEmpty()) {
+                                viewModel.agregarNota(newNotaText)
+                                newNotaText = ""
+                                showAddDialog = false
+                            }
+                        }
+                    ) {
+                        Text("Guardar")
                     }
-                }) {
-                    Text("Guardar")
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAddDialog = false }) {
+                        Text("Cancelar")
+                    }
                 }
-            },
-            dismissButton = {
-                Button(onClick = { showDialog = false }) {
-                    Text("Cancelar")
-                }
-            }
-        )
-    }
-    if (notaAEliminar != null) {
-        AlertDialog(
-            onDismissRequest = { notaAEliminar = null },
-            title = { Text("Eliminar nota") },
-            text = { Text("¿Estás seguro de que deseas eliminar esta nota?") },
-            confirmButton = {
-                Button(onClick = {
-                    notaAEliminar?.let { viewModel.eliminarNota(it) }
-                    notaAEliminar = null
-                }) { Text("Eliminar") }
-            },
-            dismissButton = {
-                Button(onClick = { notaAEliminar = null }) { Text("Cancelar") }
-            }
-        )
+            )
+        }
     }
 }
 
@@ -181,41 +144,45 @@ fun DropdownSelectorEjercicio(ejercicios: List<Ejercicio>, selectedId: Long?, on
 @Composable
 fun NotaItem(
     nota: Nota,
-    rutinas: List<Rutina>,
-    ejercicios: List<Ejercicio>,
     onDelete: () -> Unit,
-    onRutinaClick: (Long) -> Unit,
-    onEjercicioClick: (Long) -> Unit
+    onRutinaClick: () -> Unit,
+    onEjercicioClick: () -> Unit
 ) {
-    val rutina = nota.rutinaId?.let { rutinas.find { r -> r.id == it } }
-    val ejercicio = nota.ejercicioId?.let { ejercicios.find { e -> e.id == it } }
-    val fechaLegible = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(Date(nota.fecha))
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
-        elevation = 2.dp
+        elevation = 4.dp
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
+        Column(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(nota.texto, style = MaterialTheme.typography.body1)
-                Text("Fecha: $fechaLegible", style = MaterialTheme.typography.caption)
-                if (rutina != null) {
-                    TextButton(onClick = { onRutinaClick(rutina.id) }) {
-                        Text("Rutina: ${rutina.nombre}", style = MaterialTheme.typography.caption)
+            Text(nota.texto, style = MaterialTheme.typography.body1)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Fecha: ${java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(java.util.Date(nota.fecha))}",
+                style = MaterialTheme.typography.caption
+            )
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row {
+                    nota.rutinaId?.let {
+                        TextButton(onClick = onRutinaClick) {
+                            Text("Ver Rutina")
+                        }
+                    }
+                    nota.ejercicioId?.let {
+                        TextButton(onClick = onEjercicioClick) {
+                            Text("Ver Ejercicio")
+                        }
                     }
                 }
-                if (ejercicio != null) {
-                    TextButton(onClick = { onEjercicioClick(ejercicio.id) }) {
-                        Text("Ejercicio: ${ejercicio.nombre}", style = MaterialTheme.typography.caption)
-                    }
+                IconButton(onClick = onDelete) {
+                    Icon(Icons.Default.Delete, contentDescription = "Eliminar")
                 }
-            }
-            IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Eliminar nota")
             }
         }
     }

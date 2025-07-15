@@ -1,20 +1,21 @@
 package com.tuusuario.myroutineapp.ui
 
 import androidx.compose.runtime.Composable
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.tuusuario.myroutineapp.ui.screens.inicio.InicioScreen
 import com.tuusuario.myroutineapp.ui.screens.rutinas.RutinasScreen
 import com.tuusuario.myroutineapp.ui.screens.rutinas.RutinaDetailScreen
 import com.tuusuario.myroutineapp.ui.screens.ejercicios.EjerciciosScreen
 import com.tuusuario.myroutineapp.ui.screens.ejercicios.EjercicioDetailScreen
 import com.tuusuario.myroutineapp.ui.screens.metricas.MetricasScreen
 import com.tuusuario.myroutineapp.ui.screens.notas.NotasScreen
-import com.tuusuario.myroutineapp.ui.screens.inicio.InicioScreen
+import com.tuusuario.myroutineapp.ui.screens.configuracion.ConfiguracionScreen
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
-fun AppNavHost(navController: NavHostController) {
+fun AppNavHost(navController: androidx.navigation.NavController) {
     NavHost(navController, startDestination = "inicio") {
         composable("inicio") {
             InicioScreen(
@@ -22,11 +23,14 @@ fun AppNavHost(navController: NavHostController) {
                 onEjercicios = { navController.navigate("ejercicios") },
                 onMetricas = { navController.navigate("metricas") },
                 onNotas = { navController.navigate("notas") },
+                onConfiguracion = { navController.navigate("configuracion") },
                 onPlayRutina = { rutinaId -> navController.navigate("playRutina/$rutinaId") }
             )
         }
         composable("metricas") {
-            MetricasScreen()
+            MetricasScreen(
+                onConfiguracion = { navController.navigate("configuracion") }
+            )
         }
         composable("rutinas") {
             val viewModel = hiltViewModel<com.tuusuario.myroutineapp.ui.screens.rutinas.RutinasViewModel>()
@@ -49,6 +53,9 @@ fun AppNavHost(navController: NavHostController) {
                 },
                 onNotas = {
                     navController.navigate("notas")
+                },
+                onConfiguracion = {
+                    navController.navigate("configuracion")
                 }
             )
         }
@@ -69,6 +76,9 @@ fun AppNavHost(navController: NavHostController) {
                 },
                 onNuevoEjercicio = {
                     navController.navigate("ejercicioDetalle/0")
+                },
+                onConfiguracion = {
+                    navController.navigate("configuracion")
                 }
             )
         }
@@ -83,8 +93,14 @@ fun AppNavHost(navController: NavHostController) {
                 },
                 onEjercicioClick = { ejercicioId ->
                     navController.navigate("ejercicioDetalle/$ejercicioId")
+                },
+                onConfiguracion = {
+                    navController.navigate("configuracion")
                 }
             )
+        }
+        composable("configuracion") {
+            ConfiguracionScreen(navController = navController)
         }
     }
 }

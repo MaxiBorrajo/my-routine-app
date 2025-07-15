@@ -5,6 +5,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -15,6 +19,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import android.net.Uri
 import android.widget.VideoView
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.Alignment
 
 @Composable
 fun PlayRutinaScreen(
@@ -31,18 +36,26 @@ fun PlayRutinaScreen(
     val currentStep by viewModel.currentStep.collectAsState()
     val timer by viewModel.timer.collectAsState()
     val isRest by viewModel.isRest.collectAsState()
-    val unidadPeso = viewModel.unidadPeso
-    val unidadDistancia = viewModel.unidadDistancia
+    val isPaused by viewModel.isPaused.collectAsState()
 
     val step = rutinaEjercicios.getOrNull(currentStep)
     val ejercicio = step?.let { ejercicios[it.ejercicioId] }
 
+    DisposableEffect(navController) {
+        onDispose {
+            viewModel.stop()
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Play Rutina") },
+                title = { Text("Ejecutando Rutina") },
                 navigationIcon = {
-                    IconButton(onClick = { navController.popBackStack() }) {
+                    IconButton(onClick = { 
+                        viewModel.stop()
+                        navController.popBackStack() 
+                    }) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
                     }
                 }
@@ -54,13 +67,18 @@ fun PlayRutinaScreen(
                 .padding(padding)
                 .padding(16.dp)
                 .fillMaxSize(),
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             if (ejercicio != null) {
                 Text(
                     text = if (isRest) "Descanso" else ejercicio.nombre,
                     style = MaterialTheme.typography.h4
                 )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                // Media del ejercicio
                 ejercicio.mediaUri?.let {
                     val isVideo = it.startsWith("content") && (it.contains("video") || it.endsWith(".mp4") || it.endsWith(".3gp") || it.endsWith(".mkv"))
                     val context = LocalContext.current
@@ -86,35 +104,119 @@ fun PlayRutinaScreen(
                         )
                     }
                 }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Timer principal
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    elevation = 8.dp
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = if (isPaused) "PAUSADO" else "Tiempo restante",
+                            style = MaterialTheme.typography.h6
+                        )
+                        Text(
+                            text = "${timer}s",
+                            style = MaterialTheme.typography.h3
+                        )
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                // Información del ejercicio
+                if (!isRest) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = 4.dp
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Información del ejercicio",
+                                style = MaterialTheme.typography.h6
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            if (ejercicio.tipoSerie == "repeticiones") {
+                                Text("Repeticiones: ${step?.repeticiones ?: "-"}")
+                            } else if (ejercicio.tipoSerie == "tiempo") {
+                                Text("Duración: ${step?.tiempo ?: "-"} s")
+                            } else if (ejercicio.tipoSerie == "distancia") {
+                                Text("Distancia: ${step?.distancia ?: "-"} km")
+                            }
+                            
+                            step?.notas?.let { notas ->
+                                if (notas.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text("Notas: $notas")
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                // Controles
+                Row(
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Botón Pausar/Reanudar
+                    FloatingActionButton(
+                        onClick = { 
+                            if (isPaused) viewModel.resume() else viewModel.pause() 
+                        },
+                        modifier = Modifier.size(64.dp)
+                    ) {
+                        Icon(
+                            if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                            contentDescription = if (isPaused) "Reanudar" else "Pausar"
+                        )
+                    }
+                    
+                    // Botón Siguiente
+                    FloatingActionButton(
+                        onClick = { viewModel.skip() },
+                        modifier = Modifier.size(64.dp)
+                    ) {
+                        Icon(Icons.Default.SkipNext, contentDescription = "Siguiente")
+                    }
+                    
+                    // Botón Detener
+                    FloatingActionButton(
+                        onClick = { 
+                            viewModel.stop()
+                            navController.popBackStack() 
+                        },
+                        modifier = Modifier.size(64.dp),
+                        backgroundColor = MaterialTheme.colors.error
+                    ) {
+                        Icon(Icons.Default.Stop, contentDescription = "Detener")
+                    }
+                }
+                
                 Spacer(modifier = Modifier.height(16.dp))
+                
+                // Progreso
                 Text(
-                    text = "Tiempo restante: $timer s",
-                    style = MaterialTheme.typography.h5
+                    text = "Ejercicio ${currentStep + 1} de ${rutinaEjercicios.size}",
+                    style = MaterialTheme.typography.body1
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                // Mostrar repeticiones, peso o distancia con unidad
-                if (ejercicio.tipoSerie == "repeticiones") {
-                    Text("Repeticiones: ${step?.repeticiones ?: "-"}")
-                } else if (ejercicio.tipoSerie == "tiempo") {
-                    Text("Duración: ${step?.tiempo ?: "-"} s")
-                } else if (ejercicio.tipoSerie == "distancia") {
-                    Text("Distancia: ${step?.distancia ?: "-"} ${unidadDistancia.value}")
-                }
-                if (ejercicio.peso != null) {
-                    Text("Peso: ${ejercicio.peso} ${unidadPeso.value}")
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-                Row {
-                    Button(onClick = { viewModel.pause() }) { Text("Pausar") }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = { viewModel.resume() }) { Text("Reanudar") }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = { viewModel.skip() }) { Text("Saltar") }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Button(onClick = { viewModel.repeat() }) { Text("Repetir") }
-                }
             } else {
-                Text("¡Rutina finalizada!", style = MaterialTheme.typography.h4)
+                // Estado de carga
+                CircularProgressIndicator()
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Cargando rutina...")
             }
         }
     }

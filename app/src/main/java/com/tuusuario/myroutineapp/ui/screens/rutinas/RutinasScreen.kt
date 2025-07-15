@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.StickyNote2
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -26,7 +27,8 @@ fun RutinasScreen(
     onPlayRutina: (Rutina) -> Unit,
     onEjercicios: () -> Unit,
     onMetricas: () -> Unit,
-    onNotas: () -> Unit
+    onNotas: () -> Unit,
+    onConfiguracion: () -> Unit
 ) {
     val rutinas by viewModel.rutinas.collectAsState()
 
@@ -43,6 +45,9 @@ fun RutinasScreen(
                     }
                     IconButton(onClick = onNotas) {
                         Icon(Icons.Default.StickyNote2, contentDescription = "Notas")
+                    }
+                    IconButton(onClick = onConfiguracion) {
+                        Icon(Icons.Default.Settings, contentDescription = "Configuración")
                     }
                 }
             )

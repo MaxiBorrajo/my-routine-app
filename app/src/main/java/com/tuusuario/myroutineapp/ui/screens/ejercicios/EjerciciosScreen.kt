@@ -8,7 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -24,7 +24,8 @@ import androidx.compose.ui.platform.LocalContext
 fun EjerciciosScreen(
     viewModel: EjerciciosViewModel,
     onEjercicioClick: (Ejercicio) -> Unit,
-    onNuevoEjercicio: () -> Unit
+    onNuevoEjercicio: () -> Unit,
+    onConfiguracion: () -> Unit
 ) {
     val ejercicios by viewModel.ejercicios.collectAsState()
     var search by remember { mutableStateOf("") }
@@ -37,7 +38,14 @@ fun EjerciciosScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(title = { Text("Ejercicios") })
+            TopAppBar(
+                title = { Text("Mis Ejercicios") },
+                actions = {
+                    IconButton(onClick = onConfiguracion) {
+                        Icon(Icons.Default.Settings, contentDescription = "Configuración")
+                    }
+                }
+            )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = onNuevoEjercicio) {
@@ -120,6 +128,7 @@ fun EjercicioItem(
                 ejercicio.descripcion?.let {
                     Text(it, style = MaterialTheme.typography.body2)
                 }
+                Text("Grupo: ${ejercicio.grupoMuscular}", style = MaterialTheme.typography.caption)
             }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Eliminar")
